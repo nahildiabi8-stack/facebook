@@ -17,6 +17,10 @@ ORDER BY messages.date DESC
 
 ");
 
+$nombredemessages = $db->query("SELECT messages_id, COUNT(*) AS nombreCommentaire FROM `commentaires` GROUP BY messages_id ");
+
+$letrucdeux = $nombredemessages->fetch(PDO::FETCH_ASSOC);
+
 $trucbon = $trucpafetcher->fetchAll(PDO::FETCH_ASSOC);
 
 
@@ -25,8 +29,10 @@ $stmt->execute([
     'id' => $_SESSION['user_id']
 ]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
-// var_dump($_SESSION);
-// die()
+
+
+
+
 
 ?>
 
@@ -142,6 +148,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                                     <div class="flex flex-row gap-2 cursor-pointer">
                                         <button type="submit">
                                             <img src="./logos/beacon.png" alt="Comment" class="w-6 h-6">
+                                            <p><?= htmlspecialchars($letrucdeux['nombreCommentaire']) ?></p>
                                         </button>
                                     </div>
                                 </form>
@@ -172,6 +179,8 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                             <div class="flex gap-16 items-center justify-center pb-2 pt-4">
                                 <div class="flex flex-row gap-2 cursor-pointer">
                                     <button class="like-button" data-post-id="<?= $lesmessages['id'] ?>">
+                                        <?php
+                                        ?>
                                         <img class="w-6 h-6 like-icon" src="./logos/heart.png" alt="Like">
                                         <span class="like-count"><?= (int)$lesmessages['likes'] ?></span>
                                     </button>
@@ -182,6 +191,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                                     <div class="flex flex-row gap-2 cursor-pointer">
                                         <button type="submit">
                                             <img src="./logos/beacon.png" alt="Comment" class="w-6 h-6">
+                                            <p><?= htmlspecialchars($letrucdeux['nombreCommentaire']) ?></p>
                                         </button>
                                     </div>
                                 </form>

@@ -69,6 +69,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 </nav>
             </aside>
 
+
             <main class="flex-1 space-y-6">
                 <form action="./process/processajtcommentaires.php" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="message_id" value="<?= $message_id ?>">
