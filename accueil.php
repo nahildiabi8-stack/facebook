@@ -10,16 +10,15 @@ require_once "./utils/connexion.php";
 $trucpafetcher = $db->query("SELECT 
     messages.*, 
     utilisateurs.pseudo,
-    utilisateurs.profilepicture
+    utilisateurs.profilepicture,
+    COUNT(commentaires.messages_id) AS nombreCommentaire
 FROM messages
 JOIN utilisateurs ON messages.utilisateur_id = utilisateurs.id
+LEFT JOIN commentaires ON messages.id = commentaires.messages_id
+GROUP BY commentaires.messages_id
 ORDER BY messages.date DESC
 
 ");
-
-$nombredemessages = $db->query("SELECT messages_id, COUNT(*) AS nombreCommentaire FROM `commentaires` GROUP BY messages_id ");
-
-$letrucdeux = $nombredemessages->fetch(PDO::FETCH_ASSOC);
 
 $trucbon = $trucpafetcher->fetchAll(PDO::FETCH_ASSOC);
 
@@ -55,8 +54,8 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                     <a class="flex items-center gap-3 bg-[#050316] text-white rounded-xl px-4 py-3" href="./accueil.php">Accueil</a>
                     <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./explorer.php">Explorer</a>
                     <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./tendances.php">Tendances</a>
-                    <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./sauvegarde.php">Sauvegardé</a>
-                    <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./parametre.php">Paramètres</a>
+                    <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./parametre.php">Profil</a>
+                    <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./process/processdeconnectecompte.php">Déconnecte toi</a>
                 </nav>
             </aside>
 
@@ -123,7 +122,12 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                                         <div class="text-sm text-gray-500">@<?= htmlspecialchars($lesmessages['nomutilisateur']) ?> ·<?= htmlspecialchars($lesmessages['date']); ?></div>
                                     </div>
                                 </div>
-                                <div onclick="ouvremenutop()" class="text-gray-400 cursor-pointer">•••</div>
+                                <div class="relative">
+                                    <button onclick="toggleMenu(event, this)" class="text-gray-400 cursor-pointer hover:text-gray-600">•••</button>
+                                    <div class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 menu-dropdown">
+                                        <button onclick="confirmDelete(<?= $lesmessages['id'] ?>)" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">Supprimer</button>
+                                    </div>
+                                </div>
                             </div>
                             <p class="mt-4 text-gray-800"> <?= htmlspecialchars($lesmessages['message']); ?></p>
 
@@ -148,7 +152,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                                     <div class="flex flex-row gap-2 cursor-pointer">
                                         <button type="submit">
                                             <img src="./logos/beacon.png" alt="Comment" class="w-6 h-6">
-                                            <p><?= htmlspecialchars($letrucdeux['nombreCommentaire']) ?></p>
+                                            <p><?= htmlspecialchars($lesmessages['nombreCommentaire']) ?></p>
                                         </button>
                                     </div>
                                 </form>
@@ -167,7 +171,12 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                                         <div class="text-sm text-gray-500">@<?= htmlspecialchars($lesmessages['nomutilisateur']) ?> ·<?= htmlspecialchars($lesmessages['date']); ?></div>
                                     </div>
                                 </div>
-                                <div onclick="ouvremenutop()" class="text-gray-400 cursor-pointer">•••</div>
+                                <div class="relative">
+                                    <button onclick="toggleMenu(event, this)" class="text-gray-400 cursor-pointer hover:text-gray-600">•••</button>
+                                    <div class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 menu-dropdown">
+                                        <button onclick="confirmDelete(<?= $lesmessages['id'] ?>)" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">Supprimer</button>
+                                    </div>
+                                </div>
                             </div>
                             <p class="mt-4 text-gray-800"> <?= htmlspecialchars($lesmessages['message']); ?></p>
                             <?php if (!empty($lesmessages['fichier'])): ?>
@@ -191,7 +200,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                                     <div class="flex flex-row gap-2 cursor-pointer">
                                         <button type="submit">
                                             <img src="./logos/beacon.png" alt="Comment" class="w-6 h-6">
-                                            <p><?= htmlspecialchars($letrucdeux['nombreCommentaire']) ?></p>
+                                            <p><?= htmlspecialchars($lesmessages['nombreCommentaire']) ?></p>
                                         </button>
                                     </div>
                                 </form>
@@ -214,8 +223,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
             </main>
         </div>
     </div>
-
-    <a class="text-black deleteletruc" href="./process/processdeconnectecompte.php">deconnecte toi ici</a>
 </body>
 
 <script>
@@ -223,7 +230,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
         const fileInput = document.getElementById('uploadimg');
         const fileLabel = document.getElementById('file_label');
         const fileName = document.getElementById('file_name');
-        const les3trucs = document.querySelectorAll(".deleteletruc");
         if (!fileInput) return;
         fileInput.addEventListener('change', () => {
             if (fileInput.files && fileInput.files.length) {
@@ -235,6 +241,52 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
             }
         });
     })();
+
+
+    function toggleMenu(event, button) {
+        event.stopPropagation();
+        const menu = button.nextElementSibling;
+        const allMenus = document.querySelectorAll('.menu-dropdown');
+        
+        allMenus.forEach(m => {
+            if (m !== menu) {
+                m.classList.add('hidden');
+            }
+        });
+        
+        menu.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.menu-dropdown').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    });
+
+    function confirmDelete(messageId) {
+        if (confirm('sure? ?')) {
+            fetch('./process/processDeleteMessage.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'message_id=' + encodeURIComponent(messageId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('uh oh: ' + (data.error || 'peut pas'));
+                }
+            })
+            .catch(error => {
+                console.error('uh oh:', error);
+                alert('peut pas supprimer');
+            });
+        }
+    }
+
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', () => {
             const postId = button.dataset.postId;
@@ -298,10 +350,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 });
         });
     });
-
-    function ouvremenutop() {
-        les3trucs.classList.toggle("hidden");
-    }
 </script>
 
 </html>

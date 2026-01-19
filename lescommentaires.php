@@ -64,7 +64,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                     <a class="flex items-center gap-3 bg-[#050316] text-white rounded-xl px-4 py-3" href="./accueil.php">Accueil</a>
                     <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./explorer.php">Explorer</a>
                     <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./tendances.php">Tendances</a>
-                    <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./sauvegarde.php">Sauvegardé</a>
                     <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./parametre.php">Paramètres</a>
                 </nav>
             </aside>
@@ -110,19 +109,52 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                     </div>
                 </form>
 
+                <?php if ($message): ?>
+                <article class="bg-white border border-[#E5E5E5] rounded-xl p-6 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div>
+                                <div class="font-semibold"><?= htmlspecialchars($message['pseudo']) ?></div>
+                                <div class="text-sm text-gray-500"><?= htmlspecialchars($message['date']) ?></div>
+                            </div>
+                        </div>
+                        <?php if ($message['utilisateur_id'] === $_SESSION['user_id']): ?>
+                        <div class="relative">
+                            <button onclick="toggleMenu(event, this)" class="text-gray-400 cursor-pointer hover:text-gray-600">•••</button>
+                            <div class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 menu-dropdown">
+                                <button onclick="confirmDelete(<?= $message['id'] ?>)" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">Supprimer</button>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <p class="mt-4 text-gray-800"><?= htmlspecialchars($message['message']) ?></p>
+                </article>
+                <?php endif; ?>
+
                 <?php foreach ($commentaires as $commentaire): ?>
                     <article class="flex flex-col">
                         <div class="bg-gray-100 rounded-lg p-3 mt-3">
-                            <div class="text-sm font-semibold">
-                                <?= htmlspecialchars($commentaire['pseudo']) ?>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold">
+                                        <?= htmlspecialchars($commentaire['pseudo']) ?>
+                                    </div>
+
+                                    <div class="text-sm font-semibold">
+                                        <?= htmlspecialchars($commentaire['date']) ?>
+                                    </div>
+                                </div>
+                                <?php if ($commentaire['utilisateurs_id'] === $_SESSION['user_id']): ?>
+                                <div class="relative">
+                                    <button onclick="toggleMenu(event, this)" class="text-gray-400 cursor-pointer hover:text-gray-600 text-sm">•••</button>
+                                    <div class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 menu-dropdown">
+                                        <button onclick="confirmDeleteComment(<?= $commentaire['id'] ?>)" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-xs">Supprimer</button>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                             </div>
 
-                            <div class="text-sm font-semibold">
-                                <?= htmlspecialchars($commentaire['date']) ?>
-                            </div>
-
-
-                            <p class="text-sm">
+                            <p class="text-sm mt-2">
                                 <?= htmlspecialchars($commentaire['contenue']) ?>
                             </p>
                         </div>
@@ -152,7 +184,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
         const fileInput = document.getElementById('uploadimg');
         const fileLabel = document.getElementById('file_label');
         const fileName = document.getElementById('file_name');
-        const les3trucs = document.querySelectorAll(".deleteletruc");
         if (!fileInput) return;
         fileInput.addEventListener('change', () => {
             if (fileInput.files && fileInput.files.length) {
@@ -164,6 +195,79 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
             }
         });
     })();
+
+  
+    function toggleMenu(event, button) {
+        event.stopPropagation();
+        const menu = button.nextElementSibling;
+        const allMenus = document.querySelectorAll('.menu-dropdown');
+        
+        allMenus.forEach(m => {
+            if (m !== menu) {
+                m.classList.add('hidden');
+            }
+        });
+        
+        menu.classList.toggle('hidden');
+    }
+
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.menu-dropdown').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    });
+
+
+    function confirmDelete(messageId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+            fetch('./process/processDeleteMessage.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'message_id=' + encodeURIComponent(messageId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.href = './accueil.php';
+                } else {
+                    alert('uh oh ' + (data.error || 'peut pas'));
+                }
+            })
+            .catch(error => {
+                console.error('uh oh', error);
+                alert('peut pas supprimer le msg');
+            });
+        }
+    }
+
+    // Confirm and delete comment
+    function confirmDeleteComment(commentId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) {
+            fetch('./process/processDeleteComment.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'comment_id=' + encodeURIComponent(commentId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erreur: ' + (data.error || 'Impossible de supprimer le commentaire'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Erreur lors de la suppression');
+            });
+        }
+    }
+
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', () => {
             const postId = button.dataset.postId;
@@ -195,8 +299,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 });
         });
     });
-
-
 
     function ouvremenutop() {
         les3trucs.classList.toggle("hidden");

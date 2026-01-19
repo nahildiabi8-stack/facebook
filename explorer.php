@@ -32,8 +32,8 @@ $trucbon = $trucpafetcher->fetchAll(PDO::FETCH_ASSOC);
                         <a class="flex items-center gap-3 bg-[#050316] text-white rounded-xl px-4 py-3" href="./accueil.php">Accueil</a>
                         <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./explorer.php">Explorer</a>
                         <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./tendances.php">Tendances</a>
-                        <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./sauvegarde.php">Sauvegardé</a>
-                        <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./parametre.php">Paramètres</a>
+                        <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./parametre.php">Profil</a>
+                        <a class="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-black/5" href="./process/processdeconnectecompte.php">Déconnecte toi</a>
                     </nav>
                 </aside>
                 <main class="flex-1 space-y-6">
@@ -45,9 +45,15 @@ $trucbon = $trucpafetcher->fetchAll(PDO::FETCH_ASSOC);
                             <?php if ($lesmessages['utilisateur_id'] === $_SESSION['user_id']): ?>
 
                                 <article class="  bg-white border border-[#E5E5E5] transition delay-25 rounded-xl p-6 hover:shadow  hover:bg-gray-400 hover:text-2xl hover:text-white">
-
-
-
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="font-semibold text-sm"><?= htmlspecialchars($lesmessages['pseudo']) ?></div>
+                                        <div class="relative">
+                                            <button onclick="toggleMenu(event, this)" class="text-gray-400 cursor-pointer hover:text-gray-600">•••</button>
+                                            <div class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 menu-dropdown">
+                                                <button onclick="confirmDelete(<?= $lesmessages['id'] ?>)" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm">Supprimer</button>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                     <?php if (!empty($lesmessages['fichier'])): ?>
                                         <div class=" flex flex-row mt-4 rounded-lg overflow-hidden  hover:text-2xl hover:text-white">
@@ -67,9 +73,15 @@ $trucbon = $trucpafetcher->fetchAll(PDO::FETCH_ASSOC);
 
                         <?php if ($lesmessages['utilisateur_id'] !== $_SESSION['user_id']): ?>
                             <article class="  bg-white border border-[#E5E5E5] transition delay-25 rounded-xl p-6 hover:shadow  hover:bg-gray-400 hover:text-2xl hover:text-white">
-
-
-
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="font-semibold text-sm"><?= htmlspecialchars($lesmessages['pseudo']) ?></div>
+                                    <div class="relative">
+                                        <button onclick="toggleMenu(event, this)" class="text-gray-400 cursor-pointer hover:text-gray-600">•••</button>
+                                        <div class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-10 menu-dropdown">
+                                            <button onclick="confirmDelete(<?= $lesmessages['id'] ?>)" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm">Supprimer</button>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <?php if (!empty($lesmessages['fichier'])): ?>
                                     <div class=" flex flex-row mt-4 rounded-lg overflow-hidden  hover:text-2xl hover:text-white">
@@ -99,6 +111,53 @@ $trucbon = $trucpafetcher->fetchAll(PDO::FETCH_ASSOC);
 </html>
 
 <script>
+g
+    function toggleMenu(event, button) {
+        event.stopPropagation();
+        const menu = button.nextElementSibling;
+        const allMenus = document.querySelectorAll('.menu-dropdown');
+        
+        allMenus.forEach(m => {
+            if (m !== menu) {
+                m.classList.add('hidden');
+            }
+        });
+        
+        menu.classList.toggle('hidden');
+    }
+
+    
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.menu-dropdown').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    });
+
+   
+    function confirmDelete(messageId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+            fetch('./process/processDeleteMessage.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'message_id=' + encodeURIComponent(messageId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('uh oh ' + (data.error || 'peut pas'));
+                }
+            })
+            .catch(error => {
+                console.error('uh oh', error);
+                alert('peut pas uspprimer le msg');
+            });
+        }
+    }
+
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', () => {
             const postId = button.dataset.postId;
